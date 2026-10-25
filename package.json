@@ -1,0 +1,44 @@
+{
+  "name": "@theopenbee/channel-linear",
+  "version": "0.1.0",
+  "description": "Linear channel plugin for openbee",
+  "keywords": [
+    "openbee",
+    "openbee-plugin",
+    "linear"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/theopenbee/channel-linear.git"
+  },
+  "homepage": "https://github.com/theopenbee/channel-linear#readme",
+  "bugs": {
+    "url": "https://github.com/theopenbee/channel-linear/issues"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "files": [
+    "dist",
+    "openbee.plugin.json"
+  ],
+  "engines": {
+    "node": ">=20.18.1"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "node --test test/*.test.mjs",
+    "prepare": "npm run build"
+  },
+  "dependencies": {
+    "@theopenbee/channel-sdk": "^0.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0"
+  }
+}

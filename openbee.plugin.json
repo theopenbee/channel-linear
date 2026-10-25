@@ -1,0 +1,68 @@
+{
+  "protocol_version": 1,
+  "id": "linear",
+  "name": { "en": "Linear", "zh": "Linear" },
+  "description": {
+    "en": "Linear issues and comments, polled with a personal API key",
+    "zh": "通过个人 API Key 轮询 Linear issue 与评论"
+  },
+  "command": ["node", "dist/index.js"],
+  "config": [
+    {
+      "key": "api_key",
+      "type": "secret",
+      "required": true,
+      "label": { "en": "Linear API key", "zh": "Linear API Key" },
+      "help": {
+        "en": "Create a personal API key at https://linear.app/settings/api",
+        "zh": "在 https://linear.app/settings/api 创建个人 API Key"
+      }
+    },
+    {
+      "key": "label_name",
+      "type": "string",
+      "default": "openbee",
+      "label": { "en": "Gating label", "zh": "触发标签" },
+      "help": {
+        "en": "Only issues carrying this label are handled",
+        "zh": "只处理带有该标签的 issue"
+      }
+    },
+    {
+      "key": "projects",
+      "type": "list",
+      "required": true,
+      "label": { "en": "Project allow-list (project names)", "zh": "项目白名单（项目名称）" },
+      "help": {
+        "en": "Issues outside these projects are ignored even if they carry the gating label",
+        "zh": "不在这些项目中的 issue 即使带有触发标签也会被忽略"
+      }
+    },
+    {
+      "key": "states",
+      "type": "list",
+      "required": true,
+      "label": { "en": "Workflow state allow-list (state names)", "zh": "状态白名单（状态名称）" },
+      "help": {
+        "en": "Issues in other states are ignored, for example Todo, In Progress",
+        "zh": "其他状态的 issue 会被忽略，例如 Todo、In Progress"
+      }
+    },
+    {
+      "key": "poll_interval",
+      "type": "string",
+      "default": "10s",
+      "label": { "en": "Poll interval", "zh": "轮询间隔" },
+      "help": {
+        "en": "A duration such as 10s or 1m",
+        "zh": "时长，例如 10s 或 1m"
+      }
+    },
+    {
+      "key": "max_media_size",
+      "type": "int",
+      "default": 52428800,
+      "label": { "en": "Max attachment size (bytes)", "zh": "附件大小上限（字节）" }
+    }
+  ]
+}
