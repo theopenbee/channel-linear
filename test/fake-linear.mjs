@@ -51,6 +51,8 @@ export async function startFakeLinear() {
   const state = {
     issues: [],
     assets: new Map(),
+    assetFailures: new Map(),
+    assetRequests: [],
     uploads: [],
     comments: [],
     reactions: [],
@@ -143,7 +145,15 @@ export async function startFakeLinear() {
     if (req.url === "/graphql" && req.method === "POST") return graphql(req, res, body);
     if (req.url.startsWith("/assets/") && req.method === "GET") {
       state.authHeaders.add(req.headers.authorization);
-      const asset = state.assets.get(req.url.slice("/assets/".length));
+      const name = req.url.slice("/assets/".length);
+      state.assetRequests.push(name);
+      const failure = state.assetFailures.get(name)?.shift();
+      if (failure === "drop") return res.socket.destroy();
+      if (failure) {
+        res.writeHead(failure);
+        return res.end("failed");
+      }
+      const asset = state.assets.get(name);
       if (!asset) {
         res.writeHead(404);
         return res.end("missing");

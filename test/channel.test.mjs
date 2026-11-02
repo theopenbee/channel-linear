@@ -305,3 +305,42 @@ test("send retries a failed comment", async (t) => {
   assert.deepEqual(result, { platform_message_id: "posted-1" });
   assert.equal(s.fake.ops("CommentCreate").length, 3);
 });
+
+const assetCalls = (s, name) => s.fake.state.assetRequests.filter((n) => n === name).length;
+const retryLogs = (s) => s.logs.filter((l) => l.level === "warn" && l.message === "download attachment failed, retrying");
+
+test("a failing attachment download is retried until it arrives", async (t) => {
+  const s = await setup(t);
+  s.fake.state.assets.set("flaky", { data: PNG, contentType: "image/png" });
+  s.fake.state.assetFailures.set("flaky", ["drop", 503]);
+  s.fake.state.issues.push(issue({ description: `![shot](${s.fake.assetPrefix}flaky)` }));
+  await s.start();
+  const msg = await waitUntil(() => s.inbound[0], 3000, "inbound");
+  assert.deepEqual(readFileSync(msg.attachments[0].path), PNG);
+  assert.equal(assetCalls(s, "flaky"), 3);
+  assert.equal(retryLogs(s).length, 2);
+});
+
+test("an attachment that keeps failing stays a link after three attempts", async (t) => {
+  const s = await setup(t);
+  s.fake.state.assets.set("flaky", { data: PNG, contentType: "image/png" });
+  s.fake.state.assetFailures.set("flaky", ["drop", 502, 429]);
+  const link = `![shot](${s.fake.assetPrefix}flaky)`;
+  s.fake.state.issues.push(issue({ description: link }));
+  await s.start();
+  const msg = await waitUntil(() => s.inbound[0], 3000, "inbound");
+  assert.ok(msg.text.includes(link));
+  assert.equal(assetCalls(s, "flaky"), 3);
+});
+
+test("missing and oversized attachments are not retried", async (t) => {
+  const s = await setup(t, { config: { max_media_size: 4 } });
+  s.fake.state.assets.set("big", { data: PNG, contentType: "image/png" });
+  const a = s.fake.assetPrefix;
+  s.fake.state.issues.push(issue({ description: `![big](${a}big) ![gone](${a}missing)` }));
+  await s.start();
+  await waitUntil(() => s.inbound[0], 3000, "inbound");
+  assert.equal(assetCalls(s, "big"), 1);
+  assert.equal(assetCalls(s, "missing"), 1);
+  assert.equal(retryLogs(s).length, 0);
+});

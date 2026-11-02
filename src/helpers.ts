@@ -146,13 +146,19 @@ export function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   });
 }
 
-export async function retry<T>(fn: () => Promise<T>, attempts: number, delayMs: number, signal?: AbortSignal): Promise<T> {
+export async function retry<T>(
+  fn: () => Promise<T>,
+  attempts: number,
+  delayMs: number,
+  signal?: AbortSignal,
+  shouldRetry?: (err: unknown) => boolean,
+): Promise<T> {
   let delay = delayMs;
   for (let i = 1; ; i++) {
     try {
       return await fn();
     } catch (err) {
-      if (i >= attempts || signal?.aborted) throw err;
+      if (i >= attempts || signal?.aborted || (shouldRetry && !shouldRetry(err))) throw err;
     }
     await sleep(delay, signal);
     if (signal?.aborted) throw new Error("cancelled");

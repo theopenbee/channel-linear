@@ -3,7 +3,7 @@ import { basename } from "node:path";
 
 import { ConfigError, type Attachment, type ChannelContext, type ChannelDefinition, type InboundMessage, type SendRequest } from "@theopenbee/channel-sdk";
 
-import { DEFAULT_ENDPOINT, LinearApi, LinearApiError, type Comment, type Issue, type ReactionTarget } from "./api.js";
+import { DEFAULT_ENDPOINT, LinearApi, LinearApiError, isRetryableDownload, type Comment, type Issue, type ReactionTarget } from "./api.js";
 import { ASSET_PREFIX, extractAssets, splice, type AssetMatch } from "./assets.js";
 import {
   BOT_MARKER,
@@ -41,6 +41,7 @@ export interface LinearConfig {
 export interface Timings {
   retryAttempts: number;
   retryDelayMs: number;
+  downloadAttempts: number;
 }
 
 export interface LinearOptions {
@@ -50,7 +51,7 @@ export interface LinearOptions {
   timings?: Partial<Timings>;
 }
 
-const DEFAULT_TIMINGS: Timings = { retryAttempts: 5, retryDelayMs: 500 };
+const DEFAULT_TIMINGS: Timings = { retryAttempts: 5, retryDelayMs: 500, downloadAttempts: 3 };
 
 function stringValue(raw: Record<string, unknown>, key: string): string {
   const value = raw[key];
@@ -110,7 +111,11 @@ export function createLinearChannel(options: LinearOptions = {}): ChannelDefinit
 
   const resolveAsset = async (ctx: ChannelContext, m: AssetMatch, signal: AbortSignal): Promise<{ text: string; attachment?: Attachment }> => {
     try {
-      const { data, contentType } = await api!.download(m.url, cfg!.maxMediaSize, signal);
+      const { data, contentType } = await retry(() => api!.download(m.url, cfg!.maxMediaSize, signal), timings.downloadAttempts, timings.retryDelayMs, signal, (err) => {
+        if (!isRetryableDownload(err)) return false;
+        ctx.log.warn("download attachment failed, retrying", { url: m.url, error: errorText(err) });
+        return true;
+      });
       const mime = contentType && !GENERIC_TYPES.has(contentType.split(";")[0].trim()) ? contentType : detectMime(data, m.name);
       const path = await ctx.saveMedia(data, safeExtension(m.name) || extensionFromMime(mime));
       const type = mediaTypeFromMime(mime);

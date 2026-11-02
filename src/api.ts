@@ -57,6 +57,14 @@ export class LinearApiError extends Error {
   }
 }
 
+export class AssetTooLargeError extends LinearApiError {}
+
+export function isRetryableDownload(err: unknown): boolean {
+  if (!(err instanceof LinearApiError)) return true;
+  if (err instanceof AssetTooLargeError) return false;
+  return err.status === 0 || err.status === 429 || err.status >= 500;
+}
+
 interface GraphQLError {
   message?: string;
   extensions?: { code?: string; userPresentableMessage?: string };
@@ -147,7 +155,7 @@ async function readLimited(res: Response, maxBytes: number): Promise<Uint8Array>
   for await (const chunk of res.body as unknown as AsyncIterable<Uint8Array>) {
     total += chunk.length;
     if (maxBytes > 0 && total > maxBytes) {
-      throw new LinearApiError(`asset exceeds max size: more than ${maxBytes} bytes`);
+      throw new AssetTooLargeError(`asset exceeds max size: more than ${maxBytes} bytes`);
     }
     chunks.push(chunk);
   }
@@ -323,7 +331,7 @@ export class LinearApi {
     const length = Number(res.headers.get("content-length") ?? "");
     if (maxBytes > 0 && Number.isFinite(length) && length > maxBytes) {
       await res.body?.cancel();
-      throw new LinearApiError(`asset exceeds max size: ${length} bytes (max ${maxBytes})`);
+      throw new AssetTooLargeError(`asset exceeds max size: ${length} bytes (max ${maxBytes})`);
     }
     const data = await readLimited(res, maxBytes);
     return { data, contentType: res.headers.get("content-type") ?? "" };
