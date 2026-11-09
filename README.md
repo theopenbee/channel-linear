@@ -15,6 +15,8 @@ Linear channel for openbee, built on [`@theopenbee/channel-sdk`](https://www.npm
 
 ## Install
 
+Install it from **Settings → Plugins → Marketplace**, or run:
+
 ```sh
 openbee plugin install @theopenbee/channel-linear
 ```
@@ -28,19 +30,9 @@ npm install
 openbee plugin install "$(pwd)"
 ```
 
-Then run `openbee config` and select Linear. A config written for the built-in channel works unchanged:
+Then fill in its settings and enable it under **Settings → Plugins** in the desktop app or the web console, or run `openbee plugin configure linear`. Setup guide: https://theopenbee.com/docs/chat-apps/linear/
 
-```yaml
-bee:
-  platforms:
-    linear:
-      enabled: true
-      api_key: "lin_api_..."
-      label_name: "openbee"
-      poll_interval: 10s
-      projects: ["Core"]
-      states: ["Todo", "In Progress"]
-```
+Settings, also accepted as `openbee plugin configure linear --set key=value`:
 
 | Key | Default | |
 |---|---|---|
